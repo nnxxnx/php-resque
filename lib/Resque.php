@@ -39,6 +39,7 @@ class Resque
 		}
 
         self::redis()->select($database);
+        return self::$redis;
 	}
 
 	/**
