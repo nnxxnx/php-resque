@@ -23,58 +23,62 @@ if(!class_exists('Redisent')) {
    */
   class Redisent {
 
-      /**
-       * Socket connection to the Redis server
-       * @var resource
-       * @access private
-       */
-      private $__sock;
+    /**
+     * Socket connection to the Redis server
+     * @var resource
+     * @access private
+     */
+    private $__sock;
 
-      /**
-       * Host of the Redis server
-       * @var string
-       * @access public
-       */
-      public $host;
+    /**
+     * Host of the Redis server
+     * @var string
+     * @access public
+     */
+    public $host;
 
-      /**
-       * Port on which the Redis server is running
-       * @var integer
-       * @access public
-       */
-      public $port;
+    /**
+     * Port on which the Redis server is running
+     * @var integer
+     * @access public
+     */
+    public $port;
 
-      /**
-       * Creates a Redisent connection to the Redis server on host {@link $host} and port {@link $port}.
-       * @param string $host The hostname of the Redis server
-       * @param integer $port The port number of the Redis server
-       */
-      function __construct($host, $port = 6379) {
-          $this->host = $host;
-          $this->port = $port;
-          $this->__sock = fsockopen($this->host, $this->port, $errno, $errstr);
-          if (!$this->__sock) {
-              throw new Exception("{$errno} - {$errstr}");
-          }
-      }
+    /**
+     * Creates a Redisent connection to the Redis server on host {@link $host} and port {@link $port}.
+     * @param string $host The hostname of the Redis server
+     * @param integer $port The port number of the Redis server
+     */
+    function __construct($host, $port = 6379) {
+        $this->host = $host;
+        $this->port = $port;
+				$this->establishConnection();
+    }
 
-      function __destruct() {
-          fclose($this->__sock);
-      }
+    function establishConnection() {
+        $this->__sock = fsockopen($this->host, $this->port, $errno, $errstr);
+        if (!$this->__sock) {
+            throw new Exception("{$errno} - {$errstr}");
+        }
+    }
 
-      function __call($name, $args) {
+    function __destruct() {
+        fclose($this->__sock);
+    }
 
-          /* Build the Redis unified protocol command */
-          array_unshift($args, strtoupper($name));
-          $command = sprintf('*%d%s%s%s', count($args), CRLF, implode(array_map(array($this, 'formatArgument'), $args), CRLF), CRLF);
+    function __call($name, $args) {
 
-          /* Open a Redis connection and execute the command */
-          for ($written = 0; $written < strlen($command); $written += $fwrite) {
-              $fwrite = fwrite($this->__sock, substr($command, $written));
-              if ($fwrite === FALSE) {
-                  throw new Exception('Failed to write entire command to stream');
-              }
-          }
+        /* Build the Redis unified protocol command */
+        array_unshift($args, strtoupper($name));
+        $command = sprintf('*%d%s%s%s', count($args), CRLF, implode(array_map(array($this, 'formatArgument'), $args), CRLF), CRLF);
+
+        /* Open a Redis connection and execute the command */
+        for ($written = 0; $written < strlen($command); $written += $fwrite) {
+            $fwrite = fwrite($this->__sock, substr($command, $written));
+            if ($fwrite === FALSE) {
+                throw new Exception('Failed to write entire command to stream');
+            }
+        }
 
           /* Parse the response based on the reply identifier */
           $reply = trim(fgets($this->__sock, 512));
@@ -144,8 +148,7 @@ if(!class_exists('Redisent')) {
           return $response;
       }
 
-      private function formatArgument($arg) {
-          return sprintf('$%d%s%s', strlen($arg), CRLF, $arg);
-      }
-  }
+    private function formatArgument($arg) {
+        return sprintf('$%d%s%s', strlen($arg), CRLF, $arg);
+    }
 }

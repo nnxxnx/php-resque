@@ -65,7 +65,7 @@ class Resque_Tests_JobTest extends Resque_Tests_TestCase
 		Resque::enqueue('jobs', 'Test_Job', $args);
 		$job = Resque_Job::reserve('jobs');
 
-		$this->assertEquals($args, $job->payload['args']);
+		$this->assertEquals($args, $job->getArguments());
 	}
 
 	public function testAfterJobIsReservedItIsRemoved()
@@ -97,8 +97,9 @@ class Resque_Tests_JobTest extends Resque_Tests_TestCase
 
 		$newJob = Resque_Job::reserve('jobs');
 		$this->assertEquals($job->payload['class'], $newJob->payload['class']);
-		$this->assertEquals($job->payload['args'], $newJob->payload['args']);
+		$this->assertEquals($job->payload['args'], $newJob->getArguments());
 	}
+
 
 	public function testFailedJobExceptionsAreCaught()
 	{
@@ -165,5 +166,19 @@ class Resque_Tests_JobTest extends Resque_Tests_TestCase
 		$job->perform();
 		
 		$this->assertTrue(Test_Job_With_TearDown::$called);
+	}
+	
+	public function testJobWithNamespace()
+	{
+	    Resque_Redis::prefix('php');
+	    $queue = 'jobs';
+	    $payload = array('another_value');
+        Resque::enqueue($queue, 'Test_Job_With_TearDown', $payload);
+        
+        $this->assertEquals(Resque::queues(), array('jobs'));
+        $this->assertEquals(Resque::size($queue), 1);
+        
+        Resque_Redis::prefix('resque');
+        $this->assertEquals(Resque::size($queue), 0);        
 	}
 }
