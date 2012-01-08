@@ -25,12 +25,14 @@ class Resque
 	 *
 	 * @param mixed $server Host/port combination separated by a colon, or
 	 * a nested array of servers with host/port pairs.
+	 * @param integer $database the db to be selected
+	 * @param bool $phpredis use phpredis extension or fsockopen to connect to the server
 	 */
 	public static function setBackend($server, $database = 0, $phpredis = true)
 	{
 		if(is_array($server)) {
 			require_once dirname(__FILE__) . '/Resque/RedisCluster.php';
-			self::$redis = new Resque_RedisCluster($server);
+			self::$redis = new Resque_RedisCluster($server, $database, $phpredis);
 		}
 		else {
 			list($host, $port) = explode(':', $server);
