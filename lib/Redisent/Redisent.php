@@ -45,14 +45,24 @@ if(!class_exists('Redisent')) {
     public $port;
 
     /**
+     * Db on which the Redis server is selected
+     * @var integer
+     * @access public
+     */
+    public $db;
+
+    /**
      * Creates a Redisent connection to the Redis server on host {@link $host} and port {@link $port}.
      * @param string $host The hostname of the Redis server
      * @param integer $port The port number of the Redis server
+	   * @param integer $db the db to be selected
+     * @param bool $phpredis use phpredis extension or fsockopen to connect to the server
      */
-    function __construct($host, $port = 6379) {
+    function __construct($host, $port = 6379, $db = NULL, $phpredis = true) {
         $this->host = $host;
         $this->port = $port;
-				$this->establishConnection();
+		$this->db = is_null($db) ? 0 : $db;
+        $this->establishConnection2($phpredis);
     }
 
     function establishConnection() {
@@ -62,11 +72,43 @@ if(!class_exists('Redisent')) {
         }
     }
 
+    function establishConnection2($phpredis = true) {
+      if ($phpredis) {
+        try {
+          $this->__sock = new Redis();
+        }
+        catch(Exception $e) {
+          $this->establishConnection();
+          return;
+        }
+        try {
+          $this->__sock->pconnect($this->host, $this->port);
+          $this->__sock->select($this->db);
+        }
+        catch(RedisException $e) {
+          try {
+            $this->__sock->pconnect($this->host, $this->port);
+            $this->__sock->select($this->db);
+          }
+          catch(RedisException $e) {
+            error_log("Redisent establishConnection2 cannot connect to: " . $this->host .':'. $this->port, 0); die();
+          }
+        }
+      }
+      else {
+        $this->establishConnection();
+        return;
+      }
+    }
+
     function __destruct() {
+      if(!($this->__sock instanceof Redis))
         fclose($this->__sock);
     }
 
     function __call($name, $args) {
+        if(($this->__sock instanceof Redis))
+          return call_user_func_array(array($this->__sock, $name), $args);
 
         /* Build the Redis unified protocol command */
         array_unshift($args, strtoupper($name));
@@ -151,4 +193,5 @@ if(!class_exists('Redisent')) {
     private function formatArgument($arg) {
         return sprintf('$%d%s%s', strlen($arg), CRLF, $arg);
     }
+}
 }

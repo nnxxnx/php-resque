@@ -26,7 +26,7 @@ class Resque
 	 * @param mixed $server Host/port combination separated by a colon, or
 	 * a nested array of servers with host/port pairs.
 	 */
-	public static function setBackend($server, $database = 0)
+	public static function setBackend($server, $database = 0, $phpredis = true)
 	{
 		if(is_array($server)) {
 			require_once dirname(__FILE__) . '/Resque/RedisCluster.php';
@@ -35,11 +35,9 @@ class Resque
 		else {
 			list($host, $port) = explode(':', $server);
 			require_once dirname(__FILE__) . '/Resque/Redis.php';
-			self::$redis = new Resque_Redis($host, $port);
+			self::$redis = new Resque_Redis($host, $port, $database, $phpredis);
 		}
-
-        self::redis()->select($database);
-        return self::$redis;
+    return self::$redis;
 	}
 
 	/**
@@ -50,7 +48,7 @@ class Resque
 	public static function redis()
 	{
 		if(is_null(self::$redis)) {
-			self::setBackend('localhost:6379');
+			self::setBackend('localhost:6379', 0, true);
 		}
 
 		return self::$redis;

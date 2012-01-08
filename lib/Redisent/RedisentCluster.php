@@ -64,13 +64,16 @@ class RedisentCluster {
 
 	/**
 	 * Creates a Redisent interface to a cluster of Redis servers
-	 * @param array $servers The Redis servers in the cluster. Each server should be in the format array('host' => hostname, 'port' => port)
+     * @param array $servers The Redis servers in the cluster. Each server should be in the format array('host' => hostname, 'port' => port)
+     * @param integer $db the db to be selected
+     * @param bool $phpredis use phpredis extension or fsockopen to connect to the server
 	 */
-	function __construct($servers) {
+	function __construct($servers, $db = NULL, $phpredis = true) {
+	  $db = is_null($db) ? 0 : $db;
 		$this->ring = array();
 		$this->aliases = array();
 		foreach ($servers as $alias => $server) {
-			$this->redisents[] = new Redisent($server['host'], $server['port']);
+			$this->redisents[] = new Redisent($server['host'], $server['port'], $db, $phpredis);
 			if (is_string($alias)) {
 				$this->aliases[$alias] = $this->redisents[count($this->redisents)-1];
 			}
