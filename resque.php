@@ -4,14 +4,6 @@ if(empty($QUEUE)) {
 	die("Set QUEUE env var containing the list of queues to work.\n");
 }
 
-$APP_INCLUDE = getenv('APP_INCLUDE');
-if($APP_INCLUDE) {
-	if(!file_exists($APP_INCLUDE)) {
-		die('APP_INCLUDE ('.$APP_INCLUDE.") does not exist.\n");
-	}
-
-	require_once $APP_INCLUDE;
-}
 
 require_once 'lib/Resque.php';
 require_once 'lib/Resque/Worker.php';
@@ -30,6 +22,15 @@ if(!empty($LOGGING) || !empty($VERBOSE)) {
 }
 else if(!empty($VVERBOSE)) {
 	$logLevel = Resque_Worker::LOG_VERBOSE;
+}
+
+$APP_INCLUDE = getenv('APP_INCLUDE');
+if($APP_INCLUDE) {
+  if(!file_exists($APP_INCLUDE)) {
+    die('APP_INCLUDE ('.$APP_INCLUDE.") does not exist.\n");
+  }
+
+  require_once $APP_INCLUDE;
 }
 
 $interval = 5;
@@ -54,9 +55,6 @@ if($count > 1) {//start multiple workers by forking this process
     }
     // Child, start the worker
     else if($pid === 0) {
-      //reconnect to Redis in child to avoid sharing same connection with parent process
-      // leading to race condition reading from the same socket, thus errors
-      Resque::ResetBackend();
       $queues = explode(',', $QUEUE);
       $worker = new Resque_Worker($queues);
       $worker->logLevel = $logLevel;

@@ -20,14 +20,21 @@ class Resque
 	public static $redis = null;
 
 	/**
-	 * @var redis backend server address
+	 * @var mixed Host/port conbination separated by a colon, or a nested
+	 * array of server swith host/port pairs
 	 */
-	public static $server = null;
+	protected static $redisServer = null;
 
 	/**
-	 * @var integer Db on which the Redis backend server is selected
+	 * @var int ID of Redis database to select.
 	 */
-	public static $database = null;
+	protected static $redisDatabase = 0;
+
+	/**
+	 * @var int PID of current process. Used to detect changes when forking
+	 *  and implement "thread" safety to avoid race conditions.
+	 */
+	protected static $pid = null;
 
 	/**
 	 * @var bool use phpredis extension or fsockopen to connect to the redis server
@@ -43,40 +50,15 @@ class Resque
 	 * @param integer $database the db to be selected
 	 * @param bool $phpredis use phpredis extension or fsockopen to connect to the server
 	 */
-	public static function setBackend($server, $database = 0, $phpredis = true)
-	{
-	  //save the params for later use
-	  self::$server = $server;
-	  self::$database = $database;
-	  self::$phpredis = $phpredis;
+  public static function setBackend($server, $database = 0, $phpredis = true)
+  {
+    self::$redisServer   = $server;
+    self::$redisDatabase = $database;
+    self::$phpredis      = $phpredis;
+    self::$redis         = null;
+    return self::redis();
+  }
 
-		if(is_array($server)) {
-			require_once dirname(__FILE__) . '/Resque/RedisCluster.php';
-			self::$redis = new Resque_RedisCluster($server, $database, $phpredis);
-		}
-		else {
-			list($host, $port) = explode(':', $server);
-			require_once dirname(__FILE__) . '/Resque/Redis.php';
-			self::$redis = new Resque_Redis($host, $port, $database, $phpredis);
-		}
-    return self::$redis;
-	}
-
-	/**
-	* Reconnect to the redis backend specified in during __construct
-	* @return Resque_Redis Instance of Resque_Redis. (redis ressource handle)
-	*/
-	public static function ResetBackend()
-	{
-	  if(is_array(self::$server)) {
-	    self::$redis = new Resque_RedisCluster(self::$server, self::database, self::phpredis);
-	  }
-	  else {
-	    list($host, $port) = explode(':', self::$server);
-	    self::$redis = new Resque_Redis($host, $port, self::$database, self::$phpredis);
-	  }
-	  return self::$redis;
-	}
 
 	/**
 	 * Return an instance of the Resque_Redis class instantiated for Resque.
@@ -85,10 +67,38 @@ class Resque
 	 */
 	public static function redis()
 	{
-	  //try to reset the backend specified during __construct
-		if(is_null(self::$redis) && is_null(self::ResetBackend())) {
-			self::setBackend('localhost:6379', 0, true);
-		}
+	  // Detect when the PID of the current process has changed (from a fork, etc)
+	  // and force a reconnect to redis.
+	  $pid = getmypid();
+	  if (self::$pid !== $pid) {
+	    self::$redis = null;
+	    self::$pid   = $pid;
+	  }
+
+	  if(!is_null(self::$redis)) {
+	    return self::$redis;
+	  }
+
+	  $server = self::$redisServer;
+	  if (empty($server)) {
+	    $server = 'localhost:6379';
+	  }
+
+	  if(is_array($server)) {
+	    require_once dirname(__FILE__) . '/Resque/RedisCluster.php';
+	    self::$redis = new Resque_RedisCluster($server, self::$redisDatabase, self::phpredis);
+	  }
+	  else {
+      if (strpos($server, 'unix:') === false) {
+        list($host, $port) = explode(':', $server);
+      }
+      else {
+        $host = $server;
+        $port = null;
+      }
+	    require_once dirname(__FILE__) . '/Resque/Redis.php';
+	    self::$redis = new Resque_Redis($host, $port, self::$redisDatabase, self::$phpredis);
+	  }
 
 		return self::$redis;
 	}
