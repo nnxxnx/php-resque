@@ -47,7 +47,6 @@ if(!empty($COUNT) && $COUNT > 1) {
 
 $PIDFILE = getenv('PIDFILE');
 if($count > 1) {//start multiple workers by forking this process
-  $pids = '';
   for($i = 0; $i < $count; ++$i) {
     $pid = pcntl_fork();
     if($pid === -1) {
@@ -68,8 +67,10 @@ if($count > 1) {//start multiple workers by forking this process
   }
 
   if ($PIDFILE) {
+    file_put_contents($PIDFILE.'g', posix_getpgrp()) or
+      die('Could not write PID information to ' . $PIDFILE.'g');
     file_put_contents($PIDFILE, getmypid()) or
-    die('Could not write PID information to ' . $PIDFILE);
+      die('Could not write PID information to ' . $PIDFILE);
   }
 
   //in parent, wait for all child processes to terminate
@@ -85,6 +86,8 @@ else {
 	$worker->logLevel = $logLevel;
 
 	if ($PIDFILE) {
+	  file_put_contents($PIDFILE.'g', posix_getpgrp()) or
+	    die('Could not write PID information to ' . $PIDFILE.'g');
 		file_put_contents($PIDFILE, getmypid()) or
 			die('Could not write PID information to ' . $PIDFILE);
 	}
@@ -92,4 +95,3 @@ else {
 	fwrite(STDOUT, '*** Starting worker '.$worker."\n");
 	$worker->work($interval);
 }
-?>
