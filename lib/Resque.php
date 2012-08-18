@@ -113,7 +113,7 @@ class Resque
 	public static function push($queue, $item)
 	{
 		self::redis()->sadd('queues', $queue);
-		self::redis()->rpush('queue:' . $queue, json_encode($item));
+		return (int)self::redis()->rpush('queue:' . $queue, json_encode($item));
 	}
 
 	/**
@@ -159,6 +159,7 @@ class Resque
 			Resque_Event::trigger('afterEnqueue', array(
 				'class' => $class,
 				'args' => $args,
+			    'queue' => $queue,
 			));
 		}
 
