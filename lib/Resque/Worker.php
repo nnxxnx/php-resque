@@ -61,6 +61,7 @@ class Resque_Worker
 
 	/**
 	 * Return all workers known to Resque as instantiated instances.
+	 * @return array
 	 */
 	public static function all()
 	{
@@ -197,7 +198,7 @@ class Resque_Worker
 				$this->updateProcLine($status);
 				$this->log($status, self::LOG_VERBOSE);
 				$this->perform($job);
-				if($this->child === 0) {
+				if ($this->child === 0) {
 					exit(0);
 				}
 			}
@@ -228,7 +229,7 @@ class Resque_Worker
 	/**
 	 * Process a single job.
 	 *
-	 * @param object|null $job The job to be processed.
+	 * @param Resque_Job $job The job to be processed.
 	 */
 	public function perform(Resque_Job $job)
 	{

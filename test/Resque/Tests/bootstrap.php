@@ -21,6 +21,7 @@ require_once CWD . '/TestCase.php';
 // Include Resque
 require_once RESQUE_LIB . 'Resque.php';
 require_once RESQUE_LIB . 'Resque/Worker.php';
+require_once RESQUE_LIB . 'Resque/Redis.php';
 
 // Attempt to start our own redis instance for tesitng.
 exec('which redis-server', $output, $returnVar);
@@ -58,11 +59,13 @@ function killRedis($pid)
 	}
 
 	$pidFile = TEST_MISC . '/' . $matches[1];
-	$pid = trim(file_get_contents($pidFile));
-	posix_kill((int) $pid, 9);
-
-	if(is_file($pidFile)) {
-		unlink($pidFile);
+	if (file_exists($pidFile)) {
+		$pid = trim(file_get_contents($pidFile));
+		posix_kill((int) $pid, 9);
+	
+		if(is_file($pidFile)) {
+			unlink($pidFile);
+		}
 	}
 
 	// Remove the redis database
