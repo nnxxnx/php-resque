@@ -5,8 +5,8 @@ if(empty($QUEUE)) {
 }
 
 
-require_once 'lib/Resque.php';
-require_once 'lib/Resque/Worker.php';
+include_once 'lib/Resque.php';
+include_once 'lib/Resque/Worker.php';
 
 $REDIS_BACKEND = getenv('REDIS_BACKEND');
 if(!empty($REDIS_BACKEND)) {
@@ -30,7 +30,7 @@ if($APP_INCLUDE) {
     die('APP_INCLUDE ('.$APP_INCLUDE.") does not exist.\n");
   }
 
-  require_once $APP_INCLUDE;
+  include_once $APP_INCLUDE;
 }
 
 $interval = 5;
