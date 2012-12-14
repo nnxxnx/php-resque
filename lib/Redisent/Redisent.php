@@ -13,7 +13,7 @@
  * Wraps native Redis errors in friendlier PHP exceptions
  * Only declared if class doesn't already exist to ensure compatibility with php-redis
  */
-if (! class_exists('RedisException')) {
+if (! class_exists('RedisException', false)) {
     class RedisException extends Exception {
     }
 }

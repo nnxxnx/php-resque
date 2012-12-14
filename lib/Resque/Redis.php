@@ -10,8 +10,7 @@ if(!class_exists('Redisent', false)) {
  * redis. Essentially adds namespace support to Redisent.
  *
  * @package		Resque/Redis
- * @author		Chris Boulton <chris.boulton@interspire.com>
- * @copyright	(c) 2010 Chris Boulton
+ * @author		Chris Boulton <chris@bigcommerce.com>
  * @license		http://www.opensource.org/licenses/mit-license.php
  */
 class Resque_Redis extends Redisent
@@ -114,5 +113,20 @@ class Resque_Redis extends Redisent
 			return false;
 		}
 	}
+
+    public static function getPrefix()
+    {
+        return self::$defaultNamespace;
+    }
+
+    public static function removePrefix($string)
+    {
+        $prefix=self::getPrefix();
+
+        if (substr($string, 0, strlen($prefix)) == $prefix) {
+            $string = substr($string, strlen($prefix), strlen($string) );
+        }
+        return $string;
+    }
 }
 ?>
