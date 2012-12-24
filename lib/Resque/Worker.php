@@ -479,7 +479,7 @@ class Resque_Worker
 	 */
 	public function registerWorker()
 	{
-		Resque::redis()->sadd('workers', $this);
+		Resque::redis()->sadd('workers', (string)$this);
 		Resque::redis()->set('worker:' . (string)$this . ':started', strftime('%a %b %d %H:%M:%S %Z %Y'));
 	}
 
