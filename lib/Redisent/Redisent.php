@@ -100,7 +100,7 @@ if (!class_exists('Redisent', false)) {
 
         public function establishConnection()
         {
-            $this->__sock = @stream_socket_client('tcp://' . $this->host . ':' . $this->port, $errno, $errstr);
+            $this->__sock = stream_socket_client('tcp://' . $this->host . ':' . $this->port, $errno, $errstr);
             //$this->__sock = fsockopen($this->host, $this->port, $errno, $errstr);
             if (!$this->__sock) {
                 throw new Exception("{$errno} - {$errstr}");
@@ -152,9 +152,10 @@ if (!class_exists('Redisent', false)) {
         /**
          * Flushes the commands in the pipeline queue to Redis and returns the responses.
          * @see pipeline
+         * @param string $name redis command being executed
          * @access public
          */
-        public function uncork()
+        public function uncork($name = '')
         {
             /* Open a Redis connection and execute the queued commands */
             if (feof($this->__sock)) {
@@ -166,7 +167,7 @@ if (!class_exists('Redisent', false)) {
                 for ($written = 0; $written < strlen($command); $written += $fwrite) {
                     $fwrite = fwrite($this->__sock, substr($command, $written));
                     if ($fwrite === FALSE) {
-                        throw new \Exception('Failed to write entire command to stream');
+                        throw new RedisException('Failed to write entire command to stream');
                     }
                 }
             }
@@ -179,7 +180,7 @@ if (!class_exists('Redisent', false)) {
                     $this->close();
                     $this->establishConnection();
                 }
-                $responses[] = $this->readResponse($this->queue[$i]);
+                $responses[] = $this->readResponse($name);
             }
 
             // Clear the queue and return the response
@@ -230,7 +231,7 @@ if (!class_exists('Redisent', false)) {
                 if ($this->pipelined) {
                     return $this;
                 } else {
-                    return $this->uncork();
+                    return $this->uncork($name);
                 }
         }
 
