@@ -266,7 +266,7 @@ if (!class_exists('Redisent', false)) {
                     }
                     $size = (int) substr($reply, 1);
                     $response = stream_get_contents($this->__sock, $size + 2);
-                    if(!$response) {
+                    if (!$response) {
                         throw new RedisException('Error reading reply.');
                     }
                     $response = substr($response, 0, $size);
